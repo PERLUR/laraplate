@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+  # The reverse proxy service (Træfik)
+  proxy:
+    image: traefik  # The official Traefik docker image
+    restart: on-failure
+    command: --api --docker  # Enables the web UI and tells Træfik to listen to docker
+    ports:
+      - "80:80"      # The HTTP port
+      - "443:443"    # The HTTPS port
+      - "8080:8080"  # The Web UI (enabled by --api)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # So that Traefik can listen to the Docker events
+    links:
+      - web
+
+  web:
+    image: perlur/centos-laraplate
+    restart: on-failure
+    labels:
+      - "traefik.frontend.rule=Host:laraplate.localhost" # Change to your application TLD
+    volumes:
+      - ./src/:/var/www/default/html
+
+  web.db:
+    image: postgres
+    restart: on-failure
+    environment:
+      POSTGRES_USER: laraplate_db_user
+      POSTGRES_PASSWORD: secret_password
